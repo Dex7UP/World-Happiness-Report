@@ -1,0 +1,351 @@
+---
+title: "Analysis of Happiness Indicator in the World"
+output: ioslides_presentation
+widescreen: on
+---
+
+## Questions
+
+> - What is the happiest country in the world?
+> - Where does Italy stand in this ranking?
+> - How happy are the most economically powerful countries in the world?
+> - What is the happiest continent in the world?
+> - Is there correlation between:
+>   - Happiness and wealth
+>   - Happiness and healthy life expectancy
+>   - Happiness and freedom to make life choices
+
+## Dataset (1/2)
+
+Features of an almost 2000 records dataset:
+
+> - Country
+> - Year
+> - Happiness score
+> - Log GDP per capita
+> - Social Support
+> - Healthy life expectancy at birth
+> - Freedom to make life choices
+> - Generosity
+> - Perception of the corruption
+> - Positive/Negative affection
+
+## Dataset (2/2)
+
+Manipulation:
+
+> - Normalization
+>    - MinMax
+>    - Offset
+> - New features
+>    - Primary Key
+>    - Continent
+ 
+
+```{r error = FALSE, warning= FALSE, message=FALSE, echo=FALSE}
+#Read the csv file
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(extrafont)
+#font_import()
+loadfonts(device = "win", quiet = TRUE)
+df = read.csv(("world-happiness-report.csv"))
+```
+
+```{r warning= FALSE, message=FALSE, echo=FALSE}
+#Normalize generosity in a positive range
+
+minGen = abs(min(df$Generosity, na.rm = TRUE)) #0.335
+df = df %>%
+  mutate(Generosity = Generosity+minGen) %>%
+  select(everything())
+```
+
+```{r warning= FALSE, message=FALSE, echo=FALSE}
+#Create the Continent Vectors
+
+#We assume that:
+# 1) Cyprus is in EU
+# 2) Georgia is in EU
+# 3) Kazakhstan is in ASIA
+# 4) Turkey is in ASIA
+
+
+europeList = list("Albania","Andorra","Armenia","Austria","Azerbaijan","Belarus","Belgium","Bosnia and Herzegovina", "Bulgaria", "Croatia", "Cyprus", "Czech Republic","Denmark","Estonia","Finland","France","Georgia","Germany","Greece","Hungary","Iceland","Ireland","Italy","Kosovo","Latvia","Liechtenstein","Lithuania","Luxembourg","Malta","Moldova","Monaco","Montenegro","Netherlands","North Macedonia","Norway","Poland","Portugal","Romania","Russia","San Marino","Serbia","Slovakia","Slovenia","Spain","Sweden","Switzerland","Ukraine","United Kingdom","Vatican City")
+
+sAmericaList = list("Argentina","Bolivia","Brazil","Chile","Colombia","Ecuador","Guyana","Paraguay","Peru","Suriname","Uruguay","Venezuela")
+
+nAmericaList = list("Antigua and Barbuda","Bahamas","Barbados","Belize","Canada","Costa Rica","Cuba","Dominica","Dominican Republic","El Salvador","Grenada","Guatemala","Haiti","Honduras","Jamaica","Mexico","Nicaragua","Panama","Saint Kitts and Nevis","Saint Lucia","Saint Vincent and the Grenadines","Trinidad and Tobago","United States")
+
+africaList = list("Algeria","Angola","Benin","Botswana","Burkina Faso","Burundi","Cabo Verde","Cameroon","Central African Republic", "Chad", "Comoros", "Congo (Brazzaville)","Congo (Kinshasa)","Djibouti","Egypt","Equatorial Guinea", "Eritrea", "Eswatini", "Ethiopia", "Gabon", "Gambia", "Ghana", "Guinea" ,"Guinea-Bissau","Ivory Coast","Kenya","Lesotho","Liberia","Libya","Madagascar","Malawi","Mali","Mauritania","Mauritius","Morocco","Mozambique","Namibia","Niger","Nigeria","Rwanda","Sao Tome and Principe","Senegal","Seychelles","Sierra Leone","Somalia","South Africa","South Sudan", "Sudan", "Swaziland", "Tanzania","Togo","Tunisia","Uganda","Zambia","Zimbabwe")
+
+asiaList = list("Afghanistan","Bahrain","Bangladesh","Bhutan","Brunei","Cambodia","China","Hong Kong S.A.R. of China", "India", "Indonesia","Iran","Iraq","Israel","Japan","Jordan","Kazakhstan","Kuwait","Kyrgyzstan","Laos","Lebanon","Malaysia","Maldives","Mongolia","Myanmar","Nepal","North Korea", "Oman", "Pakistan","Palestine","Philippines","Qatar","Saudi Arabia","Singapore","South Korea","Sri Lanka","Syria", "Taiwan Province of China", "Tajikistan", "Thailand", "Timor-Leste","Turkey","Turkmenistan","United Arab Emirates","Uzbekistan","Vietnam","Yemen")
+
+australiaList = list("Australia","Fiji","Kiribati","Marshall Islands","Micronesia","Nauru","New Zealand","Palau","Papua New Guinea","Samoa","Solomon Islands","Tonga","Tuvalu","Vanuatu")
+
+##Manipulation of incongruences
+
+df = subset(df, Country.name != "Somaliland region") #We already have Somalia
+df$Country.name[df$Country.name == "Palestinian Territories"] = "Palestine"
+df$Country.name[df$Country.name == "North Cyprus"] = "Cyprus"
+```
+
+```{r warning= FALSE, message=FALSE, echo=FALSE}
+#Add a primary key
+
+df = df %>%
+  mutate(id = 1:nrow(df)) %>%
+  select(id, everything())
+```
+
+```{r warning= FALSE, message=FALSE, echo=FALSE}
+##Split the dataset in subsets grouped by continents
+
+countries = df %>% distinct(Country.name) #all countries list in df
+europe = subset(countries, Country.name %in% europeList) #europe countries in df
+northAmerica = subset(countries, Country.name %in% nAmericaList) #north America countries in df
+southAmerica = subset(countries, Country.name %in% sAmericaList) #south America countries in df
+africa = subset(countries, Country.name %in% africaList) #Africa countries in df
+asia = subset(countries, Country.name %in% asiaList) #Asia countries in df
+australia = subset(countries, Country.name %in% australiaList) #Australia countries in df
+
+
+#Add the Continent column to the dataset
+df = df %>% mutate(Continent = NA)
+for (i in 1:nrow(df)){
+  if(df$Country.name[df$id == i] %in% europe[[1]]) {df$Continent[df$id == i] = "Europe"}
+  else if (df$Country.name[df$id == i] %in% northAmerica[[1]]) {df$Continent[df$id == i] = "North America"}
+  else if (df$Country.name[df$id == i] %in% southAmerica[[1]]) {df$Continent[df$id == i] = "South America"}
+  else if (df$Country.name[df$id == i] %in% africa[[1]]) {df$Continent[df$id == i] = "Africa"}
+  else if (df$Country.name[df$id == i] %in% asia[[1]]) {df$Continent[df$id == i] = "Asia"}
+  else if (df$Country.name[df$id == i] %in% australia[[1]]) {df$Continent[df$id == i] = "Australia"}
+}
+
+```
+
+# What is the happiest country in the world?
+```{r warning= FALSE, message=FALSE, echo=FALSE, fig.width=9.5, fig.height=6}
+
+avg_stats_df = distinct( df %>%
+  group_by(Country.name) %>%
+  mutate(avg_score = mean(Life.Ladder, na.rm = TRUE))%>%
+  mutate(avg_lifexp = mean(Healthy.life.expectancy.at.birth, na.rm = TRUE))%>%
+  mutate(avg_logGDP = mean(Log.GDP.per.capita, na.rm = TRUE)) %>%
+  mutate(avg_social = mean(Social.support, na.rm = TRUE)) %>%
+  mutate(avg_freedom = mean(Freedom.to.make.life.choices, na.rm = TRUE)) %>%
+  mutate(avg_generosity = mean(Generosity, na.rm = TRUE)) %>%
+  mutate(avg_corruption = mean(Perceptions.of.corruption, na.rm = TRUE)) %>%
+  mutate(avg_posaff = mean(Positive.affect, na.rm = TRUE)) %>%
+  mutate(avg_negaff = mean(Negative.affect, na.rm = TRUE)) %>%
+    arrange(desc(avg_score)) %>%
+    select(id, Country.name, avg_score:avg_negaff, Continent) , Country.name, .keep_all = TRUE)
+
+ggplot(data = head(avg_stats_df, 5))+
+  geom_col(data = head(avg_stats_df, 5), aes(x = ((avg_score - min(avg_score)) / (max(avg_score) - min(avg_score))) +.5, y = reorder(Country.name, avg_score)), fill = "#4CAF50", width = .5) +
+  labs(x = "Happiness Score (mean)", y = "Country",
+       title = "HAPPIEST COUNTRIES IN THE WORLD", subtitle = "Ranking of the top 5 countries in happiness score in mean") +
+  theme(axis.title.x = element_text(size = 13),
+        axis.title.y = element_text(margin = margin(r = 10, l = 20), size = 13),
+        plot.title = element_text(hjust = 0.5, size = 20, face = "bold.italic", family = "Tahoma", margin = margin(b = 10, t = 5)),
+        plot.subtitle = element_text(hjust = .4, size = 10, family = "Tahoma", margin = margin(b = 15))) +
+  coord_cartesian(xlim = c(0.5, 1.6))
+```
+---
+
+# Italy?
+```{r warning= FALSE, message=FALSE, echo=FALSE, fig.width=10, fig.height=6}
+#Comparison with best/worst country
+
+best_avg_country = avg_stats_df$Country.name[
+  avg_stats_df$avg_score == max(avg_stats_df$avg_score) ]
+
+#for the worst, bc of lack of data of the real worst one, we take the country with most data out of the 5 worst ones
+
+worst_avg_countries = tail(avg_stats_df,5) %>% select(Country.name) #list of the 5 worst ones
+worst_avg_country = df %>% group_by(Country.name) %>% filter(Country.name %in% worst_avg_countries[[1]]) %>% summarise(n = n()) %>% filter(n == max(n)) %>% select(Country.name)
+
+italy_df = df %>% filter(Country.name == 'Italy')
+best_df = df %>% filter(Country.name == best_avg_country)
+worst_df = df %>% filter(Country.name == worst_avg_country[[1]])
+
+#BEST == "Denmark"
+#WORST == "Afghanistan"
+#plot best/italy/worst
+
+colors = c("Denmark" = "green", "Italy" = "black", "Afghanistan" = "red")
+ggplot(df, aes(x=year, y=Life.Ladder)) +
+geom_line(data = italy_df, aes(color = "Italy"), size = .9) + 
+  geom_point(data = italy_df, aes(color = "Italy"), shape = "diamond", size = 2) +
+  geom_line(data = worst_df, aes(color = "Afghanistan"), size = .9) + 
+  geom_point(data = worst_df, aes(color = "Afghanistan"), shape = "diamond", size = 2) +
+  geom_line(data = best_df, aes(color = "Denmark"), size = .9) + 
+  geom_point(data = best_df, aes(color = "Denmark"), shape = "diamond", size = 2)+
+  labs(x = "Year", y = "Happiness Score",
+       title = " HAPPIEST vs ITALY vs SADDEST", subtitle = "Happiness trends over time of the 2 countries with highest/lowest score in mean VS Italian score trend") +
+  theme(axis.title.x = element_text(size = 13),
+        axis.title.y = element_text(margin = margin(r = 10, l = 20), size = 13),
+        plot.title = element_text(hjust = 0.6, size = 20, face = "bold.italic", family = "Tahoma", margin = margin(b = 10, t = 5)),
+        plot.subtitle = element_text(hjust = 0.75, size = 10, family = "Tahoma", margin = margin(b = 15))) +
+  scale_color_manual(name = "Legend",
+                     breaks=c("Denmark", "Italy", "Afghanistan"),
+                     values=colors)
+```
+---
+```{r warning= FALSE, message=FALSE, echo=FALSE, fig.width=9.5, fig.height=6}
+##PLOT RESULTS
+
+#Italy over the years
+g = df %>%
+  filter(Country.name == 'Italy') %>%
+    ggplot(mapping = aes(x = year, y = Life.Ladder))
+
+g + geom_line(size = .9) + geom_point(size = 2) + 
+  labs(x = "Year", y = "Happiness Score", title = "ITALY HAPPINESS SCORE OVER TIME") + 
+  theme(axis.title.x = element_text(size = 13),
+        axis.title.y = element_text(margin = margin(r = 10, l = 20), size = 13),
+        plot.title = element_text(hjust = 0.5, vjust = 1.5, size = 20, face = "bold.italic", family = "Tahoma", margin = margin(b = 10, t = 5)))
+```
+---
+# Are the G7 countries happy?
+```{r warning= FALSE, message=FALSE, echo=FALSE, fig.width=9.5, fig.height=6}
+
+#Comparison among G7
+#BarPlot
+G7_countries = c("Canada", "France", "Germany", "Italy", "United States", "United Kingdom", "Japan")
+G7_df = avg_stats_df %>% filter(Country.name %in% G7_countries)
+ggplot(data = G7_df)+
+  geom_col(aes(x = Country.name, y = avg_score), fill = c("#FF9AA2", "#556B2F","#00BFFF", "#C71585", "#FF6347", "#FFD700", "#40E0D0")) +
+  labs(x = "Country", y = "Happiness (mean)",
+       title = "HAPPINESS OF G7 COUNTRIES IN MEAN", subtitle = "Happiness score in mean of the most economically powerful countries in the world") +
+  theme(axis.title.x = element_text(margin = margin(t = 12), size = 13),
+        axis.title.y = element_text(margin = margin(r = 10, l = 20), size = 13),
+        plot.title = element_text(hjust = 0.5, size = 20, face = "bold.italic", family = "Tahoma", margin = margin(b = 10, t = 5)),
+        plot.subtitle = element_text(hjust = 0.5, size = 10, family = "Tahoma", margin = margin(b = 15)))
+```
+---
+```{r warning= FALSE, message=FALSE, echo=FALSE, fig.width=10, fig.height=6}
+#Filtering datasets for the LinePlot
+canada_df = df %>% filter(Country.name == 'Canada')
+france_df = df %>% filter(Country.name == 'France')
+germany_df = df %>% filter(Country.name == 'Germany')
+italy_df = df %>% filter(Country.name == 'Italy')
+us_df = df %>% filter(Country.name == 'United States')
+uk_df = df %>% filter(Country.name == 'United Kingdom')
+japan_df = df %>% filter(Country.name == 'Japan')
+
+#LinePlot
+G7_df1 = df %>% filter(Country.name %in% G7_countries)
+
+colors = c("Canada" = "#FF9AA2", "France" = "#FF6347", "Germany" = "#C71585", "Italy" = "#FFD700",
+           "USA" = "#556B2F", "UK" = "#00BFFF", "Japan" = "#40E0D0")
+ggplot(data = G7_df1, aes(x = year))+
+  geom_line(data = canada_df, aes(y = Life.Ladder, color = "Canada"), size = .9) + 
+  geom_point(data = canada_df, aes(y = Life.Ladder, color = "Canada"), shape = "diamond", size = 2) +
+  geom_line(data = france_df, aes(y = Life.Ladder, color = "France"), size = .9) + 
+  geom_point(data = france_df, aes(y = Life.Ladder, color = "France"), shape = "diamond", size = 2) +
+  geom_line(data = germany_df, aes(y = Life.Ladder, color = "Germany"), size = .9) + 
+  geom_point(data = germany_df, aes(y = Life.Ladder, color = "Germany"), shape = "diamond", size = 2) +
+  geom_line(data = italy_df, aes(y = Life.Ladder, color = "Italy"), size = .9) + 
+  geom_point(data = italy_df, aes(y = Life.Ladder, color = "Italy"), shape = "diamond", size = 2) +
+  geom_line(data = us_df, aes(y = Life.Ladder, color = "USA"), size = .9) + 
+  geom_point(data = us_df, aes(y = Life.Ladder, color = "USA"), shape = "diamond", size = 2) +
+  geom_line(data = uk_df, aes(y = Life.Ladder, color = "UK"), size = .9) + 
+  geom_point(data = uk_df, aes(y = Life.Ladder, color = "UK"), shape = "diamond", size = 2) +
+  geom_line(data = japan_df, aes(y = Life.Ladder, color = "Japan"), size = .9) + 
+  geom_point(data = japan_df, aes(y = Life.Ladder, color = "Japan"), shape = "diamond", size = 2) +
+  labs(x = "Year", y = "Happiness Score", color = "Legend",
+       title = "G7 COUNTRIES OVER TIME", subtitle = "Happiness trends of the most economically powerful countries in the world") +
+  theme(axis.title.x = element_text(size = 13),
+        axis.title.y = element_text(margin = margin(r = 10, l = 20), size = 13),
+        plot.title = element_text(hjust = 0.5, size = 20, face = "bold.italic", family = "Tahoma", margin = margin(b = 10, t = 5)),
+        plot.subtitle = element_text(hjust = 0.5, size = 10, family = "Tahoma", margin = margin(b = 15))) +
+  scale_color_manual(values = colors)
+```
+---
+
+# What is the happiest continent in the world?
+```{r warning= FALSE, message=FALSE, echo=FALSE, fig.width=9.5, fig.height=6}
+#Comparison among the continents
+
+global_avg_score = df %>% summarize(mean = mean(Life.Ladder, na.rm = TRUE))
+
+ggplot(data = avg_stats_df)+
+  geom_boxplot(aes(x=reorder(Continent, avg_score, FUN = median), y=avg_score)) +
+  geom_hline("yintercept" = pull(global_avg_score), linetype = "dashed", color = "red") +
+  annotate("text", x = Inf, y = pull(global_avg_score), label = "mean", vjust = -.5, hjust = 1.1, color = "red") +
+  labs(x = "Continents", y = "Happiness (mean)",
+       title = "HAPPINESS OF CONTINENTS IN MEAN", subtitle = "Happiness score in mean grouped by continents") +
+  theme(axis.title.x = element_text(margin = margin(t = 12), size = 13),
+        axis.title.y = element_text(margin = margin(r = 10, l = 20), size = 13),
+        plot.title = element_text(hjust = 0.45, size = 20, face = "bold.italic", family = "Tahoma", margin = margin(b = 10, t = 5)),
+        plot.subtitle = element_text(hjust = 0.45, size = 10, family = "Tahoma", margin = margin(b = 15)))
+```
+---
+
+# Analysis of Correlation
+```{r warning= FALSE, message=FALSE, echo=FALSE, fig.width=10, fig.height=6}
+#Correlation Happiness - Life Expectancy
+
+ggplot(data = avg_stats_df, aes(x = avg_lifexp, y = avg_score))+
+  geom_point(mapping = aes(color = Continent, shape = Continent), size = 1.5, stroke = 1)+
+  scale_color_manual(values=c("#FF9AA2", "#556B2F","#00BFFF", "#C71585", "#FF6347", "#FFD700", "#40E0D0"))+
+  geom_smooth(color = "#000000", se = FALSE) +
+  labs(x = "Life expectancy (mean)", y = "Happiness (mean)",
+       title = "CORRELATION HAPPINESS-LIFE EXPECTANCY",
+       subtitle = "Comparison between Happiness Score and Healthy Life Expectancy at birth in mean") +
+  theme(axis.title.x = element_text(margin = margin(t = 10), size = 13),
+        axis.title.y = element_text(margin = margin(r = 10, l = 20), size = 13),
+        plot.title = element_text(hjust = .5, size = 20, face = "bold.italic", family = "Tahoma", margin = margin(b = 10, t = 5)),
+        plot.subtitle = element_text(hjust = .5, size = 10, family = "Tahoma", margin = margin(b = 15)))
+  
+```
+---
+```{r warning= FALSE, message=FALSE, echo=FALSE, fig.width=10, fig.height=6}
+#Correlation Happiness - GDP
+
+ggplot(avg_stats_df, mapping = aes(x = avg_logGDP, y = avg_score)) +
+  geom_point(mapping = aes(color = Continent, shape = Continent), size = 1.5, stroke = 1) +
+  scale_color_manual(values=c("#FF9AA2", "#556B2F","#00BFFF", "#C71585", "#FF6347", "#FFD700", "#40E0D0")) +
+  geom_smooth(color = "#000000", se = FALSE) +
+  labs(x = "GDP(log) in mean", y = "Happiness (mean)",
+       title = "CORRELATION GDP-HAPPINESS", subtitle = "Comparison between GDP and Happiness score in mean") +
+  theme(axis.title.x = element_text(margin = margin(t = 10), size = 13),
+        axis.title.y = element_text(margin = margin(r = 10, l = 20), size = 13),
+        plot.title = element_text(hjust = 0.5, size = 20, face = "bold.italic", family = "Tahoma", margin = margin(b = 10, t = 5)),
+        plot.subtitle = element_text(hjust = 0.5, size = 10, family = "Tahoma", margin = margin(b = 15)))
+```
+---
+```{r warning= FALSE, message=FALSE, echo=FALSE, fig.width=10, fig.height=6}
+#Correlation Happiness - Freedom of life choices
+
+ggplot(avg_stats_df, mapping = aes(x = avg_freedom, y = avg_score)) +
+  geom_point(mapping = aes(color = Continent, shape = Continent), size = 1.5, stroke = 1) +
+  scale_color_manual(values=c("#FF9AA2", "#556B2F","#00BFFF", "#C71585", "#FF6347", "#FFD700", "#40E0D0")) +
+  geom_smooth(color = "#000000", se = FALSE) +
+  labs(x = "Freedom of life choices (mean)", y = "Happiness (mean)",
+       title = "CORRELATION HAPPINESS-FREEDOM OF LIFE CHOICE", subtitle = "Comparison between Happiness score and Freedom to make life choices in mean") +
+  theme(axis.title.x = element_text(margin = margin(t = 10), size = 13),
+        axis.title.y = element_text(margin = margin(r = 10, l = 20), size = 13),
+        plot.title = element_text(hjust = .1, size = 20, face = "bold.italic", family = "Tahoma", margin = margin(b = 10, t = 5)),
+        plot.subtitle = element_text(hjust = 0.5, size = 10, family = "Tahoma", margin = margin(b = 15)))
+```
+---
+# Conclusions
+
+## Conclusions
+
+> - Denmark is, in mean, the happiest country in the world
+> - The north-west Europe is the happiest part of the planet
+> - Happiness score is linearly correlated to:
+>    - Wealth
+>    - Healthy life expectancy at birth
+>    - Freedom to make life choices
+
+# Thank You
+
+
+
+
+
+
