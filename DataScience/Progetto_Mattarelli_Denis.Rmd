@@ -35,7 +35,6 @@ Features of an almost 2000 records dataset:
 Manipulation:
 
 > - Normalization
->    - MinMax
 >    - Offset
 > - New features
 >    - Primary Key
@@ -142,14 +141,14 @@ avg_stats_df = distinct( df %>%
     select(id, Country.name, avg_score:avg_negaff, Continent) , Country.name, .keep_all = TRUE)
 
 ggplot(data = head(avg_stats_df, 5))+
-  geom_col(data = head(avg_stats_df, 5), aes(x = ((avg_score - min(avg_score)) / (max(avg_score) - min(avg_score))) +.5, y = reorder(Country.name, avg_score)), fill = "#4CAF50", width = .5) +
+  geom_col(data = head(avg_stats_df, 5), aes(x = avg_score, y = reorder(Country.name, avg_score)), fill = "#4CAF50", width = .5) +
   labs(x = "Happiness Score (mean)", y = "Country",
        title = "HAPPIEST COUNTRIES IN THE WORLD", subtitle = "Ranking of the top 5 countries in happiness score in mean") +
   theme(axis.title.x = element_text(size = 13),
         axis.title.y = element_text(margin = margin(r = 10, l = 20), size = 13),
         plot.title = element_text(hjust = 0.5, size = 20, face = "bold.italic", family = "Tahoma", margin = margin(b = 10, t = 5)),
         plot.subtitle = element_text(hjust = .4, size = 10, family = "Tahoma", margin = margin(b = 15))) +
-  coord_cartesian(xlim = c(0.5, 1.6))
+  coord_cartesian(xlim = c(7.4,7.7))
 ```
 ---
 
@@ -215,13 +214,14 @@ g + geom_line(size = .9) + geom_point(size = 2) +
 G7_countries = c("Canada", "France", "Germany", "Italy", "United States", "United Kingdom", "Japan")
 G7_df = avg_stats_df %>% filter(Country.name %in% G7_countries)
 ggplot(data = G7_df)+
-  geom_col(aes(x = Country.name, y = avg_score), fill = c("#FF9AA2", "#556B2F","#00BFFF", "#C71585", "#FF6347", "#FFD700", "#40E0D0")) +
+  geom_col(aes(x = reorder(Country.name, avg_score), y = avg_score), fill = c("#FF9AA2", "#556B2F","#00BFFF", "#C71585", "#FF6347", "#FFD700", "#40E0D0")) +
   labs(x = "Country", y = "Happiness (mean)",
        title = "HAPPINESS OF G7 COUNTRIES IN MEAN", subtitle = "Happiness score in mean of the most economically powerful countries in the world") +
   theme(axis.title.x = element_text(margin = margin(t = 12), size = 13),
         axis.title.y = element_text(margin = margin(r = 10, l = 20), size = 13),
         plot.title = element_text(hjust = 0.5, size = 20, face = "bold.italic", family = "Tahoma", margin = margin(b = 10, t = 5)),
-        plot.subtitle = element_text(hjust = 0.5, size = 10, family = "Tahoma", margin = margin(b = 15)))
+        plot.subtitle = element_text(hjust = 0.5, size = 10, family = "Tahoma", margin = margin(b = 15))) +
+  coord_cartesian(ylim = c(5.75,7.5))
 ```
 ---
 ```{r warning= FALSE, message=FALSE, echo=FALSE, fig.width=10, fig.height=6}
@@ -285,15 +285,14 @@ ggplot(data = avg_stats_df)+
 
 # Analysis of Correlation
 ```{r warning= FALSE, message=FALSE, echo=FALSE, fig.width=10, fig.height=6}
-#Correlation Happiness - Life Expectancy
+#WORLD Correlation Happiness - Life Expectancy
 
-ggplot(data = avg_stats_df, aes(x = avg_lifexp, y = avg_score))+
-  geom_point(mapping = aes(color = Continent, shape = Continent), size = 1.5, stroke = 1)+
-  scale_color_manual(values=c("#FF9AA2", "#556B2F","#00BFFF", "#C71585", "#FF6347", "#FFD700", "#40E0D0"))+
-  geom_smooth(color = "#000000", se = FALSE) +
+ggplot(data = avg_stats_df, mapping = aes(x = avg_lifexp, y = avg_score))+
+  geom_point(color = "darkgreen", size = 1.5, stroke = 1)+
+  geom_smooth(color = "red", se = FALSE, size = 1.5) +
   labs(x = "Life expectancy (mean)", y = "Happiness (mean)",
-       title = "CORRELATION HAPPINESS-LIFE EXPECTANCY",
-       subtitle = "Comparison between Happiness Score and Healthy Life Expectancy at birth in mean") +
+       title = "GLOBAL CORRELATION HAPPINESS-LIFE EXPECTANCY",
+       subtitle = "World's comparison between Happiness Score and Healthy Life Expectancy at birth in mean") +
   theme(axis.title.x = element_text(margin = margin(t = 10), size = 13),
         axis.title.y = element_text(margin = margin(r = 10, l = 20), size = 13),
         plot.title = element_text(hjust = .5, size = 20, face = "bold.italic", family = "Tahoma", margin = margin(b = 10, t = 5)),
@@ -302,14 +301,100 @@ ggplot(data = avg_stats_df, aes(x = avg_lifexp, y = avg_score))+
 ```
 ---
 ```{r warning= FALSE, message=FALSE, echo=FALSE, fig.width=10, fig.height=6}
-#Correlation Happiness - GDP
+#AFRICA Correlation Happiness - Life Expectancy
+
+ggplot(data = avg_stats_df %>% filter(Continent == "Africa"), mapping = aes(x = avg_lifexp, y = avg_score))+
+  geom_point(aes(color = Continent), size = 1.5, stroke = 1)+
+  geom_smooth(color = "#FF6347", se = FALSE, size = 1.5) +
+  scale_color_manual(name = "Continent", values = "#00BFFF") +
+  labs(x = "Life expectancy (mean)", y = "Happiness (mean)",
+       title = "CORRELATION HAPPINESS-LIFE EXPECTANCY",
+       subtitle = "Africa's comparison between Happiness Score and Healthy Life Expectancy at birth in mean") +
+  theme(axis.title.x = element_text(margin = margin(t = 10), size = 13),
+        axis.title.y = element_text(margin = margin(r = 10, l = 20), size = 13),
+        plot.title = element_text(hjust = .5, size = 20, face = "bold.italic", family = "Tahoma", margin = margin(b = 10, t = 5)),
+        plot.subtitle = element_text(hjust = .5, size = 10, family = "Tahoma", margin = margin(b = 15)))
+  
+```
+---
+```{r warning= FALSE, message=FALSE, echo=FALSE, fig.width=10, fig.height=6}
+#ASIA Correlation Happiness - Life Expectancy
+
+ggplot(data = avg_stats_df %>% filter(Continent == "Asia"), mapping = aes(x = avg_lifexp, y = avg_score))+
+  geom_point(aes(color = Continent), size = 1.5, stroke = 1)+
+  geom_smooth(color = "#FF6347", se = FALSE, size = 1.5) +
+  scale_color_manual(name = "Continent", values = "#00BFFF") +
+  labs(x = "Life expectancy (mean)", y = "Happiness (mean)",
+       title = "CORRELATION HAPPINESS-LIFE EXPECTANCY",
+       subtitle = "Asia's comparison between Happiness Score and Healthy Life Expectancy at birth in mean") +
+  theme(axis.title.x = element_text(margin = margin(t = 10), size = 13),
+        axis.title.y = element_text(margin = margin(r = 10, l = 20), size = 13),
+        plot.title = element_text(hjust = .5, size = 20, face = "bold.italic", family = "Tahoma", margin = margin(b = 10, t = 5)),
+        plot.subtitle = element_text(hjust = .5, size = 10, family = "Tahoma", margin = margin(b = 15)))
+  
+```
+---
+```{r warning= FALSE, message=FALSE, echo=FALSE, fig.width=10, fig.height=6}
+#EUROPE Correlation Happiness - Life Expectancy
+
+ggplot(data = avg_stats_df %>% filter(Continent == "Europe"), mapping = aes(x = avg_lifexp, y = avg_score))+
+  geom_point(aes(color = Continent), size = 1.5, stroke = 1)+
+  geom_smooth(color = "#FF6347", se = FALSE, size = 1.5) +
+  scale_color_manual(name = "Continent", values = "#00BFFF") +
+  labs(x = "Life expectancy (mean)", y = "Happiness (mean)",
+       title = "CORRELATION HAPPINESS-LIFE EXPECTANCY",
+       subtitle = "Europe's comparison between Happiness Score and Healthy Life Expectancy at birth in mean") +
+  theme(axis.title.x = element_text(margin = margin(t = 10), size = 13),
+        axis.title.y = element_text(margin = margin(r = 10, l = 20), size = 13),
+        plot.title = element_text(hjust = .5, size = 20, face = "bold.italic", family = "Tahoma", margin = margin(b = 10, t = 5)),
+        plot.subtitle = element_text(hjust = .5, size = 10, family = "Tahoma", margin = margin(b = 15)))
+  
+```
+---
+```{r warning= FALSE, message=FALSE, echo=FALSE, fig.width=10, fig.height=6}
+#NORTH AMERICA Correlation Happiness - Life Expectancy
+
+ggplot(data = avg_stats_df %>% filter(Continent == "North America"), mapping = aes(x = avg_lifexp, y = avg_score))+
+  geom_point(aes(color = Continent), size = 1.5, stroke = 1)+
+  geom_smooth(color = "#FF6347", se = FALSE, size = 1.5) +
+  scale_color_manual(name = "Continent", values = "#00BFFF") +
+  labs(x = "Life expectancy (mean)", y = "Happiness (mean)",
+       title = "CORRELATION HAPPINESS-LIFE EXPECTANCY",
+       subtitle = "North America's comparison between Happiness Score and Healthy Life Expectancy at birth in mean") +
+  theme(axis.title.x = element_text(margin = margin(t = 10), size = 13),
+        axis.title.y = element_text(margin = margin(r = 10, l = 20), size = 13),
+        plot.title = element_text(hjust = .5, size = 20, face = "bold.italic", family = "Tahoma", margin = margin(b = 10, t = 5)),
+        plot.subtitle = element_text(hjust = .5, size = 10, family = "Tahoma", margin = margin(b = 15)))
+  
+```
+---
+```{r warning= FALSE, message=FALSE, echo=FALSE, fig.width=10, fig.height=6}
+#SOUTH AMERICA Correlation Happiness - Life Expectancy
+
+ggplot(data = avg_stats_df %>% filter(Continent == "South America"), mapping = aes(x = avg_lifexp, y = avg_score))+
+  geom_point(aes(color = Continent), size = 1.5, stroke = 1)+
+  geom_smooth(color = "#FF6347", se = FALSE, size = 1.5) +
+  scale_color_manual(name = "Continent", values = "#00BFFF") +
+  labs(x = "Life expectancy (mean)", y = "Happiness (mean)",
+       title = "CORRELATION HAPPINESS-LIFE EXPECTANCY",
+       subtitle = "South America's comparison between Happiness Score and Healthy Life Expectancy at birth in mean") +
+  theme(axis.title.x = element_text(margin = margin(t = 10), size = 13),
+        axis.title.y = element_text(margin = margin(r = 10, l = 20), size = 13),
+        plot.title = element_text(hjust = .5, size = 20, face = "bold.italic", family = "Tahoma", margin = margin(b = 10, t = 5)),
+        plot.subtitle = element_text(hjust = .5, size = 10, family = "Tahoma", margin = margin(b = 15)))
+  
+```
+---
+
+# Correlation Happiness - GDP
+```{r warning= FALSE, message=FALSE, echo=FALSE, fig.width=10, fig.height=6}
+#WORLD Correlation Happiness - GDP
 
 ggplot(avg_stats_df, mapping = aes(x = avg_logGDP, y = avg_score)) +
-  geom_point(mapping = aes(color = Continent, shape = Continent), size = 1.5, stroke = 1) +
-  scale_color_manual(values=c("#FF9AA2", "#556B2F","#00BFFF", "#C71585", "#FF6347", "#FFD700", "#40E0D0")) +
-  geom_smooth(color = "#000000", se = FALSE) +
+  geom_point(color = "darkgreen", size = 1.5, stroke = 1) +
+  geom_smooth(color = "red", se = FALSE, size = 1.5) +
   labs(x = "GDP(log) in mean", y = "Happiness (mean)",
-       title = "CORRELATION GDP-HAPPINESS", subtitle = "Comparison between GDP and Happiness score in mean") +
+       title = "GLOBAL CORRELATION GDP-HAPPINESS", subtitle = "World's comparison between GDP and Happiness score in mean") +
   theme(axis.title.x = element_text(margin = margin(t = 10), size = 13),
         axis.title.y = element_text(margin = margin(r = 10, l = 20), size = 13),
         plot.title = element_text(hjust = 0.5, size = 20, face = "bold.italic", family = "Tahoma", margin = margin(b = 10, t = 5)),
@@ -317,14 +402,165 @@ ggplot(avg_stats_df, mapping = aes(x = avg_logGDP, y = avg_score)) +
 ```
 ---
 ```{r warning= FALSE, message=FALSE, echo=FALSE, fig.width=10, fig.height=6}
-#Correlation Happiness - Freedom of life choices
+#AFRICA Correlation Happiness - GDP
+
+ggplot(avg_stats_df %>% filter(Continent == "Africa"), mapping = aes(x = avg_logGDP, y = avg_score)) +
+  geom_point(aes(color = Continent), size = 1.5, stroke = 1) +
+  geom_smooth(color = "#FF6347", se = FALSE, size = 1.5) +
+  scale_color_manual(name = "Continent", values = "#00BFFF") +
+  labs(x = "GDP(log) in mean", y = "Happiness (mean)",
+       title = "CORRELATION GDP-HAPPINESS", subtitle = "Africa's comparison between GDP and Happiness score in mean") +
+  theme(axis.title.x = element_text(margin = margin(t = 10), size = 13),
+        axis.title.y = element_text(margin = margin(r = 10, l = 20), size = 13),
+        plot.title = element_text(hjust = 0.5, size = 20, face = "bold.italic", family = "Tahoma", margin = margin(b = 10, t = 5)),
+        plot.subtitle = element_text(hjust = 0.5, size = 10, family = "Tahoma", margin = margin(b = 15)))
+```
+---
+```{r warning= FALSE, message=FALSE, echo=FALSE, fig.width=10, fig.height=6}
+#ASIA Correlation Happiness - GDP
+
+ggplot(avg_stats_df %>% filter(Continent == "Asia"), mapping = aes(x = avg_logGDP, y = avg_score)) +
+  geom_point(aes(color = Continent), size = 1.5, stroke = 1) +
+  geom_smooth(color = "#FF6347", se = FALSE, size = 1.5) +
+  scale_color_manual(name = "Continent", values = "#00BFFF") +
+  labs(x = "GDP(log) in mean", y = "Happiness (mean)",
+       title = "CORRELATION GDP-HAPPINESS", subtitle = "Asia's comparison between GDP and Happiness score in mean") +
+  theme(axis.title.x = element_text(margin = margin(t = 10), size = 13),
+        axis.title.y = element_text(margin = margin(r = 10, l = 20), size = 13),
+        plot.title = element_text(hjust = 0.5, size = 20, face = "bold.italic", family = "Tahoma", margin = margin(b = 10, t = 5)),
+        plot.subtitle = element_text(hjust = 0.5, size = 10, family = "Tahoma", margin = margin(b = 15)))
+```
+---
+```{r warning= FALSE, message=FALSE, echo=FALSE, fig.width=10, fig.height=6}
+#EUROPE Correlation Happiness - GDP
+
+ggplot(avg_stats_df %>% filter(Continent == "Europe"), mapping = aes(x = avg_logGDP, y = avg_score)) +
+  geom_point(aes(color = Continent), size = 1.5, stroke = 1) +
+  geom_smooth(color = "#FF6347", se = FALSE, size = 1.5) +
+  scale_color_manual(name = "Continent", values = "#00BFFF") +
+  labs(x = "GDP(log) in mean", y = "Happiness (mean)",
+       title = "CORRELATION GDP-HAPPINESS", subtitle = "Europe's comparison between GDP and Happiness score in mean") +
+  theme(axis.title.x = element_text(margin = margin(t = 10), size = 13),
+        axis.title.y = element_text(margin = margin(r = 10, l = 20), size = 13),
+        plot.title = element_text(hjust = 0.5, size = 20, face = "bold.italic", family = "Tahoma", margin = margin(b = 10, t = 5)),
+        plot.subtitle = element_text(hjust = 0.5, size = 10, family = "Tahoma", margin = margin(b = 15)))
+```
+---
+```{r warning= FALSE, message=FALSE, echo=FALSE, fig.width=10, fig.height=6}
+#NORTH AMERICA Correlation Happiness - GDP
+
+ggplot(avg_stats_df %>% filter(Continent == "North America"), mapping = aes(x = avg_logGDP, y = avg_score)) +
+  geom_point(aes(color = Continent), size = 1.5, stroke = 1) +
+  geom_smooth(color = "#FF6347", se = FALSE, size = 1.5) +
+  scale_color_manual(name = "Continent", values = "#00BFFF") +
+  labs(x = "GDP(log) in mean", y = "Happiness (mean)",
+       title = "CORRELATION GDP-HAPPINESS", subtitle = "North America's comparison between GDP and Happiness score in mean") +
+  theme(axis.title.x = element_text(margin = margin(t = 10), size = 13),
+        axis.title.y = element_text(margin = margin(r = 10, l = 20), size = 13),
+        plot.title = element_text(hjust = 0.5, size = 20, face = "bold.italic", family = "Tahoma", margin = margin(b = 10, t = 5)),
+        plot.subtitle = element_text(hjust = 0.5, size = 10, family = "Tahoma", margin = margin(b = 15)))
+```
+---
+```{r warning= FALSE, message=FALSE, echo=FALSE, fig.width=10, fig.height=6}
+#SOUTH AMERICA Correlation Happiness - GDP
+
+ggplot(avg_stats_df %>% filter(Continent == "South America"), mapping = aes(x = avg_logGDP, y = avg_score)) +
+  geom_point(aes(color = Continent), size = 1.5, stroke = 1) +
+  geom_smooth(color = "#FF6347", se = FALSE, size = 1.5) +
+  scale_color_manual(name = "Continent", values = "#00BFFF") +
+  labs(x = "GDP(log) in mean", y = "Happiness (mean)",
+       title = "CORRELATION GDP-HAPPINESS", subtitle = "South America's comparison between GDP and Happiness score in mean") +
+  theme(axis.title.x = element_text(margin = margin(t = 10), size = 13),
+        axis.title.y = element_text(margin = margin(r = 10, l = 20), size = 13),
+        plot.title = element_text(hjust = 0.5, size = 20, face = "bold.italic", family = "Tahoma", margin = margin(b = 10, t = 5)),
+        plot.subtitle = element_text(hjust = 0.5, size = 10, family = "Tahoma", margin = margin(b = 15)))
+```
+---
+
+# Correlation <br> Happiness - Freedom of life choices
+```{r warning= FALSE, message=FALSE, echo=FALSE, fig.width=10, fig.height=6}
+#WORLD Correlation Happiness - Freedom of life choices
 
 ggplot(avg_stats_df, mapping = aes(x = avg_freedom, y = avg_score)) +
-  geom_point(mapping = aes(color = Continent, shape = Continent), size = 1.5, stroke = 1) +
-  scale_color_manual(values=c("#FF9AA2", "#556B2F","#00BFFF", "#C71585", "#FF6347", "#FFD700", "#40E0D0")) +
-  geom_smooth(color = "#000000", se = FALSE) +
+  geom_point(color = "darkgreen", size = 1.5, stroke = 1) +
+  geom_smooth(color = "red", se = FALSE, size = 1.5) +
   labs(x = "Freedom of life choices (mean)", y = "Happiness (mean)",
-       title = "CORRELATION HAPPINESS-FREEDOM OF LIFE CHOICE", subtitle = "Comparison between Happiness score and Freedom to make life choices in mean") +
+       title = "GLOBAL CORRELATION HAPPINESS-FREEDOM OF LIFE CHOICE", subtitle = "World's comparison between Happiness score and Freedom to make life choices in mean") +
+  theme(axis.title.x = element_text(margin = margin(t = 10), size = 13),
+        axis.title.y = element_text(margin = margin(r = 10, l = 20), size = 13),
+        plot.title = element_text(hjust = .1, size = 20, face = "bold.italic", family = "Tahoma", margin = margin(b = 10, t = 5)),
+        plot.subtitle = element_text(hjust = 0.5, size = 10, family = "Tahoma", margin = margin(b = 15)))
+```
+---
+```{r warning= FALSE, message=FALSE, echo=FALSE, fig.width=10, fig.height=6}
+#AFRICA Correlation Happiness - Freedom of life choices
+
+ggplot(avg_stats_df %>% filter(Continent == "Africa"), mapping = aes(x = avg_freedom, y = avg_score)) +
+  geom_point(aes(color = Continent), size = 1.5, stroke = 1) +
+  geom_smooth(color = "#FF6347", se = FALSE, size = 1.5) +
+  scale_color_manual(name = "Continent", values = "#00BFFF") +
+  labs(x = "Freedom of life choices (mean)", y = "Happiness (mean)",
+       title = "CORRELATION HAPPINESS-FREEDOM OF LIFE CHOICE", subtitle = "Africa's comparison between Happiness score and Freedom to make life choices in mean") +
+  theme(axis.title.x = element_text(margin = margin(t = 10), size = 13),
+        axis.title.y = element_text(margin = margin(r = 10, l = 20), size = 13),
+        plot.title = element_text(hjust = .1, size = 20, face = "bold.italic", family = "Tahoma", margin = margin(b = 10, t = 5)),
+        plot.subtitle = element_text(hjust = 0.5, size = 10, family = "Tahoma", margin = margin(b = 15)))
+```
+---
+```{r warning= FALSE, message=FALSE, echo=FALSE, fig.width=10, fig.height=6}
+#ASIA Correlation Happiness - Freedom of life choices
+
+ggplot(avg_stats_df %>% filter(Continent == "Asia"), mapping = aes(x = avg_freedom, y = avg_score)) +
+  geom_point(aes(color = Continent), size = 1.5, stroke = 1) +
+  geom_smooth(color = "#FF6347", se = FALSE, size = 1.5) +
+  scale_color_manual(name = "Continent", values = "#00BFFF") +
+  labs(x = "Freedom of life choices (mean)", y = "Happiness (mean)",
+       title = "CORRELATION HAPPINESS-FREEDOM OF LIFE CHOICE", subtitle = "Asia's comparison between Happiness score and Freedom to make life choices in mean") +
+  theme(axis.title.x = element_text(margin = margin(t = 10), size = 13),
+        axis.title.y = element_text(margin = margin(r = 10, l = 20), size = 13),
+        plot.title = element_text(hjust = .1, size = 20, face = "bold.italic", family = "Tahoma", margin = margin(b = 10, t = 5)),
+        plot.subtitle = element_text(hjust = 0.5, size = 10, family = "Tahoma", margin = margin(b = 15)))
+```
+---
+```{r warning= FALSE, message=FALSE, echo=FALSE, fig.width=10, fig.height=6}
+#EUROPE Correlation Happiness - Freedom of life choices
+
+ggplot(avg_stats_df %>% filter(Continent == "Europe"), mapping = aes(x = avg_freedom, y = avg_score)) +
+  geom_point(aes(color = Continent), size = 1.5, stroke = 1) +
+  geom_smooth(color = "#FF6347", se = FALSE, size = 1.5) +
+  scale_color_manual(name = "Continent", values = "#00BFFF") +
+  labs(x = "Freedom of life choices (mean)", y = "Happiness (mean)",
+       title = "CORRELATION HAPPINESS-FREEDOM OF LIFE CHOICE", subtitle = "Europe's comparison between Happiness score and Freedom to make life choices in mean") +
+  theme(axis.title.x = element_text(margin = margin(t = 10), size = 13),
+        axis.title.y = element_text(margin = margin(r = 10, l = 20), size = 13),
+        plot.title = element_text(hjust = .1, size = 20, face = "bold.italic", family = "Tahoma", margin = margin(b = 10, t = 5)),
+        plot.subtitle = element_text(hjust = 0.5, size = 10, family = "Tahoma", margin = margin(b = 15)))
+```
+---
+```{r warning= FALSE, message=FALSE, echo=FALSE, fig.width=10, fig.height=6}
+#NORTH AMERICA Correlation Happiness - Freedom of life choices
+
+ggplot(avg_stats_df %>% filter(Continent == "North America"), mapping = aes(x = avg_freedom, y = avg_score)) +
+  geom_point(aes(color = Continent), size = 1.5, stroke = 1) +
+  geom_smooth(color = "#FF6347", se = FALSE, size = 1.5) +
+  scale_color_manual(name = "Continent", values = "#00BFFF") +
+  labs(x = "Freedom of life choices (mean)", y = "Happiness (mean)",
+       title = "CORRELATION HAPPINESS-FREEDOM OF LIFE CHOICE", subtitle = "North America's comparison between Happiness score and Freedom to make life choices in mean") +
+  theme(axis.title.x = element_text(margin = margin(t = 10), size = 13),
+        axis.title.y = element_text(margin = margin(r = 10, l = 20), size = 13),
+        plot.title = element_text(hjust = .1, size = 20, face = "bold.italic", family = "Tahoma", margin = margin(b = 10, t = 5)),
+        plot.subtitle = element_text(hjust = 0.5, size = 10, family = "Tahoma", margin = margin(b = 15)))
+```
+---
+```{r warning= FALSE, message=FALSE, echo=FALSE, fig.width=10, fig.height=6}
+#SOUTH AMERICA Correlation Happiness - Freedom of life choices
+
+ggplot(avg_stats_df %>% filter(Continent == "South America"), mapping = aes(x = avg_freedom, y = avg_score)) +
+  geom_point(aes(color = Continent), size = 1.5, stroke = 1) +
+  geom_smooth(color = "#FF6347", se = FALSE, size = 1.5) +
+  scale_color_manual(name = "Continent", values = "#00BFFF") +
+  labs(x = "Freedom of life choices (mean)", y = "Happiness (mean)",
+       title = "CORRELATION HAPPINESS-FREEDOM OF LIFE CHOICE", subtitle = "South America's comparison between Happiness score and Freedom to make life choices in mean") +
   theme(axis.title.x = element_text(margin = margin(t = 10), size = 13),
         axis.title.y = element_text(margin = margin(r = 10, l = 20), size = 13),
         plot.title = element_text(hjust = .1, size = 20, face = "bold.italic", family = "Tahoma", margin = margin(b = 10, t = 5)),
